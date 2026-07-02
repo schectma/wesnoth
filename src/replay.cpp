@@ -363,6 +363,12 @@ static std::vector< chat_msg > message_log;
 
 const std::vector<chat_msg>& replay::build_chat_log() const
 {
+
+	static int  rebuild_count      = 0;  // times the WHOLE log is rebuilt (the "repeatedly")
+	static long cumulative_entries = 0;  // total [speak] extractions across ALL rebuilds
+	++rebuild_count;
+	int combed_this_call = 0;            // [speak] tags combed in THIS rebuild
+
 	message_log.clear();
 	std::vector<int>::const_iterator loc_it;
 	int last_location = 0;
@@ -373,8 +379,14 @@ const std::vector<chat_msg>& replay::build_chat_log() const
 
 		const config &speak = command(last_location).mandatory_child("speak");
 		add_chat_log_entry(speak, chat_log_appender);
-
+		++combed_this_call;
 	}
+
+	cumulative_entries += combed_this_call;
+	PLAIN_LOG << "[issue #1086] build_chat_log() rebuild #" << rebuild_count
+	          << ": re-combed " << combed_this_call << " [speak] tags this time; "
+	          << cumulative_entries << " total [speak] extractions across all rebuilds so far.";
+
 	return message_log;
 }
 
